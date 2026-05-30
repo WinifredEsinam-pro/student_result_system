@@ -10,7 +10,7 @@ import { protect, adminOnly } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.use(protect); // all routes below require login
+router.use(protect); 
 
 router.get("/", getStudents);
 router.get("/:id", getStudentById);

@@ -19,7 +19,7 @@ const getGradeInfo = (score) => {
 export const addResult = async (req, res) => {
   try {
     const { studentId, semester, results } = req.body;
-    // results = [{ subjectId, score }, ...]
+  
 
     const student = await Student.findById(studentId);
     if (!student) return res.status(404).json({ message: "Student not found" });

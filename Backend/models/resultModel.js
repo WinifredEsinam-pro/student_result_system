@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const resultSchema = new mongoose.Schema(
   {
     student: { type: mongoose.Schema.Types.ObjectId, ref: "Student", required: true },
-    semester: { type: String, required: true }, // e.g. "2024 Semester 1"
+    semester: { type: String, required: true },
     results: [
       {
         subject: { type: mongoose.Schema.Types.ObjectId, ref: "Subject", required: true },
