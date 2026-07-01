@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/api";
+const API_URL = "https://student-result-api-81np.onrender.com";
 
 // ── Auth helpers ──
 const getToken = () => localStorage.getItem("token");
