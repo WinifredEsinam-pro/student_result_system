@@ -33,7 +33,7 @@ const authLimiter = rateLimit({
 });
 
 app.use(cors({
-  origin: ["http://127.0.0.1:5500", "http://localhost:5500", "https://your-app.netlify.app"],
+  origin: ["http://127.0.0.1:5500", "http://localhost:5500", "https://srmbywinam.netlify.app/"],
   credentials: true,
 }));
 
