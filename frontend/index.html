@@ -1,0 +1,79 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — Student Result System</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<div class="login-page">
+  <div class="login-bg"></div>
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>Result<span>MS</span></h1>
+      <p>Student Result Management System</p>
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-form">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="admin@school.com" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
+      <button class="login-btn" id="loginBtn">Sign In</button>
+      <p style="text-align:center;font-size:13px;color:var(--text2);margin-top:12px">
+  New admin? <a href="register.html" style="color:var(--accent)">Create account</a>
+</p>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  // Redirect if already logged in
+  if (getToken()) window.location.href = "dashboard.html";
+
+  const loginBtn  = document.getElementById("loginBtn");
+  const errorBox  = document.getElementById("loginError");
+  const emailEl   = document.getElementById("email");
+  const passEl    = document.getElementById("password");
+
+  const doLogin = async () => {
+    const email    = emailEl.value.trim();
+    const password = passEl.value.trim();
+    errorBox.style.display = "none";
+
+    if (!email || !password) {
+      errorBox.textContent = "Please fill in all fields.";
+      errorBox.style.display = "block";
+      return;
+    }
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = "Signing in...";
+
+    try {
+      const data = await api.post("/users/login", { email, password });
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      errorBox.textContent = err.message;
+      errorBox.style.display = "block";
+      loginBtn.disabled = false;
+      loginBtn.textContent = "Sign In";
+    }
+  };
+
+  loginBtn.addEventListener("click", doLogin);
+  [emailEl, passEl].forEach(el =>
+    el.addEventListener("keydown", e => e.key === "Enter" && doLogin())
+  );
+</script>
+</body>
+</html>

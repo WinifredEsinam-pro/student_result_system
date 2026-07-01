@@ -1,0 +1,228 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Results — ResultMS</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo"><h2>ResultMS</h2><p>Management System</p></div>
+    <nav>
+      <a href="dashboard.html" class="nav-item" data-page="dashboard"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+      <a href="students.html" class="nav-item" data-page="students"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Students</a>
+      <a href="subjects.html" class="nav-item" data-page="subjects"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>Subjects</a>
+      <a href="results.html" class="nav-item" data-page="results"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Results</a>
+      <a href="transcript.html" class="nav-item" data-page="transcript"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Transcripts</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-details"><p id="userName">Admin</p><span id="userRole">admin</span></div>
+      </div>
+      <button class="logout-btn" id="logoutBtn">Sign Out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>Results</h1>
+      <p>Enter and manage student results</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:24px;align-items:start">
+
+      <!-- Entry form -->
+      <div class="card">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:20px" id="formTitle">Enter Results</h3>
+        <div class="form-grid single">
+          <div class="form-group">
+            <label>Student</label>
+            <select id="fStudent">
+              <option value="">Select student...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Semester</label>
+            <input type="text" id="fSemester" placeholder="e.g. 2024 Semester 1"/>
+          </div>
+        </div>
+
+        <div id="subjectScores" style="margin:20px 0"></div>
+
+        <button class="btn btn-primary" style="width:100%" id="submitBtn">
+          Submit Results
+        </button>
+        <button class="btn btn-ghost" style="width:100%;margin-top:8px;display:none" id="cancelEditBtn">
+          Cancel Edit
+        </button>
+      </div>
+
+      <!-- Results list -->
+      <div class="card">
+        <div class="toolbar">
+          <h3 style="font-size:16px;font-weight:700">All Results</h3>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Semester</th>
+                <th>GPA</th>
+                <th>Remarks</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="resultsTable">
+              <tr><td colspan="5"><div class="loading"><div class="spinner"></div> Loading...</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  requireAuth();
+  setActivePage("results");
+  initSidebar();
+
+  let subjects = [];
+  let allResults = [];
+  let editingResultId = null;
+
+  const buildScoreInputs = () => {
+    const container = document.getElementById("subjectScores");
+    if (!subjects.length) {
+      container.innerHTML = `<p style="color:var(--text3);font-size:13px">No subjects loaded</p>`;
+      return;
+    }
+    container.innerHTML = `
+      <p style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px">Scores (0–100)</p>
+      ${subjects.map(s => `
+        <div class="subject-row">
+          <div>
+            <label>${s.name}</label>
+            <small>${s.code} · ${s.creditHours} credit${s.creditHours > 1 ? "s" : ""}</small>
+          </div>
+          <input type="number" id="score_${s._id}" placeholder="0" min="0" max="100" style="text-align:center"/>
+        </div>`).join("")}`;
+  };
+
+  const loadData = async () => {
+    try {
+      const [students, subs, results] = await Promise.all([
+        api.get("/students"),
+        api.get("/subjects"),
+        api.get("/results"),
+      ]);
+
+      subjects   = subs;
+      allResults = results;
+
+      const sel = document.getElementById("fStudent");
+      sel.innerHTML = `<option value="">Select student...</option>` +
+        students.map(s => `<option value="${s._id}">${s.name} (${s.studentId})</option>`).join("");
+
+      buildScoreInputs();
+      renderResults();
+    } catch (err) { showToast(err.message, "error"); }
+  };
+
+  const renderResults = () => {
+    const tbody = document.getElementById("resultsTable");
+    if (!allResults.length) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><p>No results entered yet</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = allResults.map(r => `
+      <tr>
+        <td style="color:var(--text);font-weight:500">${r.student?.name || "—"}</td>
+        <td>${r.semester}</td>
+        <td><span class="gpa-badge ${gpaClass(r.gpa)}">${r.gpa}</span></td>
+        <td><span class="badge ${r.remarks === 'Pass' ? 'pass' : 'fail'}">${r.remarks}</span></td>
+        <td>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="editResult('${r._id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteResult('${r._id}')">Delete</button>
+          </div>
+        </td>
+      </tr>`).join("");
+  };
+
+  const editResult = (id) => {
+    const result = allResults.find(r => r._id === id);
+    if (!result) return;
+    editingResultId = id;
+    document.getElementById("formTitle").textContent = "Edit Results";
+    document.getElementById("fStudent").value  = result.student?._id || "";
+    document.getElementById("fSemester").value = result.semester;
+    document.getElementById("cancelEditBtn").style.display = "block";
+
+    result.results.forEach(item => {
+      const input = document.getElementById(`score_${item.subject?._id}`);
+      if (input) input.value = item.score;
+    });
+  };
+
+  const cancelEdit = () => {
+    editingResultId = null;
+    document.getElementById("formTitle").textContent = "Enter Results";
+    document.getElementById("fStudent").value  = "";
+    document.getElementById("fSemester").value = "";
+    document.getElementById("cancelEditBtn").style.display = "none";
+    subjects.forEach(s => {
+      const el = document.getElementById(`score_${s._id}`);
+      if (el) el.value = "";
+    });
+  };
+
+  const deleteResult = async (id) => {
+    if (!confirm("Delete this result?")) return;
+    try {
+      await api.delete(`/results/${id}`);
+      showToast("Result deleted");
+      loadData();
+    } catch (err) { showToast(err.message, "error"); }
+  };
+
+  document.getElementById("submitBtn").addEventListener("click", async () => {
+    const studentId = document.getElementById("fStudent").value;
+    const semester  = document.getElementById("fSemester").value.trim();
+
+    if (!studentId || !semester) { showToast("Select a student and enter a semester", "error"); return; }
+
+    const results = subjects.map(s => ({
+      subjectId: s._id,
+      score: parseInt(document.getElementById(`score_${s._id}`)?.value || 0),
+    }));
+
+    const invalid = results.some(r => isNaN(r.score) || r.score < 0 || r.score > 100);
+    if (invalid) { showToast("Scores must be between 0 and 100", "error"); return; }
+
+    try {
+      if (editingResultId) {
+        await api.put(`/results/${editingResultId}`, { results });
+        showToast("Result updated");
+      } else {
+        await api.post("/results", { studentId, semester, results });
+        showToast("Results submitted");
+      }
+      cancelEdit();
+      loadData();
+    } catch (err) { showToast(err.message, "error"); }
+  });
+
+  document.getElementById("cancelEditBtn").addEventListener("click", cancelEdit);
+
+  loadData();
+</script>
+</body>
+</html>

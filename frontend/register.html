@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register — Student Result System</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<div class="login-page">
+  <div class="login-bg"></div>
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>Result<span>MS</span></h1>
+      <p>Create an admin account</p>
+    </div>
+    <div class="login-error" id="registerError"></div>
+    <div class="login-form">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" placeholder="John Doe" autocomplete="name"/>
+      </div>
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="admin@school.com" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Min. 6 characters" autocomplete="new-password"/>
+      </div>
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="password" id="confirmPassword" placeholder="Repeat password"/>
+      </div>
+      <div class="form-group">
+        <label for="adminKey">Admin Secret Key</label>
+        <input type="password" id="adminKey" placeholder="Enter admin secret key"/>
+      </div>
+      <button class="login-btn" id="registerBtn">Create Account</button>
+      <p style="text-align:center;font-size:13px;color:var(--text2)">
+        Already have an account? <a href="index.html" style="color:var(--accent)">Sign in</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  if (getToken()) window.location.href = "dashboard.html";
+
+  const registerBtn   = document.getElementById("registerBtn");
+  const errorBox      = document.getElementById("registerError");
+  const nameEl        = document.getElementById("name");
+  const emailEl       = document.getElementById("email");
+  const passEl        = document.getElementById("password");
+  const confirmPassEl = document.getElementById("confirmPassword");
+  const adminKeyEl    = document.getElementById("adminKey");
+
+  const doRegister = async () => {
+    const name            = nameEl.value.trim();
+    const email           = emailEl.value.trim();
+    const password        = passEl.value.trim();
+    const confirmPassword = confirmPassEl.value.trim();
+    const adminKey        = adminKeyEl.value.trim();
+
+    errorBox.style.display = "none";
+
+    if (!name || !email || !password || !confirmPassword || !adminKey) {
+      errorBox.textContent = "Please fill in all fields.";
+      errorBox.style.display = "block"; return;
+    }
+
+    if (password.length < 6) {
+      errorBox.textContent = "Password must be at least 6 characters.";
+      errorBox.style.display = "block"; return;
+    }
+
+    if (password !== confirmPassword) {
+      errorBox.textContent = "Passwords do not match.";
+      errorBox.style.display = "block"; return;
+    }
+
+    registerBtn.disabled = true;
+    registerBtn.textContent = "Creating account...";
+
+    try {
+      const data = await api.post("/users/register", {
+        name, email, password, role: "admin", adminKey
+      });
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      errorBox.textContent = err.message;
+      errorBox.style.display = "block";
+      registerBtn.disabled = false;
+      registerBtn.textContent = "Create Account";
+    }
+  };
+
+  registerBtn.addEventListener("click", doRegister);
+  [nameEl, emailEl, passEl, confirmPassEl, adminKeyEl].forEach(el =>
+    el.addEventListener("keydown", e => e.key === "Enter" && doRegister())
+  );
+</script>
+</body>
+</html>

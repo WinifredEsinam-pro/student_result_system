@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Students — ResultMS</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo"><h2>ResultMS</h2><p>Management System</p></div>
+    <nav>
+      <a href="dashboard.html" class="nav-item" data-page="dashboard"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+      <a href="students.html" class="nav-item" data-page="students"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Students</a>
+      <a href="subjects.html" class="nav-item" data-page="subjects"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>Subjects</a>
+      <a href="results.html" class="nav-item" data-page="results"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Results</a>
+      <a href="transcript.html" class="nav-item" data-page="transcript"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Transcripts</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-details"><p id="userName">Admin</p><span id="userRole">admin</span></div>
+      </div>
+      <button class="logout-btn" id="logoutBtn">Sign Out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>Students</h1>
+      <p>Manage all registered students</p>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div class="search-box">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Search students..."/>
+        </div>
+        <button class="btn btn-primary" id="addBtn">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Student
+        </button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Student ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Class</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="studentsTable">
+            <tr><td colspan="5"><div class="loading"><div class="spinner"></div> Loading...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Add Student</h3>
+      <button class="modal-close" id="modalClose">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Student ID</label>
+        <input type="text" id="fStudentId" placeholder="e.g. STU001"/>
+      </div>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="fName" placeholder="John Doe"/>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="fEmail" placeholder="john@email.com"/>
+      </div>
+      <div class="form-group">
+        <label>Class</label>
+        <input type="text" id="fClass" placeholder="e.g. Grade 10A"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="saveBtn">Save Student</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  requireAuth();
+  setActivePage("students");
+  initSidebar();
+
+  let students = [];
+  let editingId = null;
+
+  const tbody = document.getElementById("studentsTable");
+  const modal = document.getElementById("modal");
+
+  const openModal = (student = null) => {
+    editingId = student?._id || null;
+    document.getElementById("modalTitle").textContent = student ? "Edit Student" : "Add Student";
+    document.getElementById("fStudentId").value = student?.studentId || "";
+    document.getElementById("fName").value       = student?.name     || "";
+    document.getElementById("fEmail").value      = student?.email    || "";
+    document.getElementById("fClass").value      = student?.className || "";
+    modal.classList.add("open");
+  };
+
+  const closeModal = () => { modal.classList.remove("open"); editingId = null; };
+
+  const renderTable = (data) => {
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>No students found</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.map(s => `
+      <tr>
+        <td><strong style="color:var(--text)">${s.studentId}</strong></td>
+        <td style="color:var(--text);font-weight:500">${s.name}</td>
+        <td>${s.email}</td>
+        <td>${s.className}</td>
+        <td>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="editStudent('${s._id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s._id}','${s.name}')">Delete</button>
+          </div>
+        </td>
+      </tr>`).join("");
+  };
+
+  const loadStudents = async () => {
+    try {
+      students = await api.get("/students");
+      renderTable(students);
+    } catch (err) { showToast(err.message, "error"); }
+  };
+
+  const editStudent = (id) => openModal(students.find(s => s._id === id));
+
+  const deleteStudent = async (id, name) => {
+    if (!confirm(`Delete student "${name}"? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/students/${id}`);
+      showToast("Student deleted");
+      loadStudents();
+    } catch (err) { showToast(err.message, "error"); }
+  };
+
+  document.getElementById("saveBtn").addEventListener("click", async () => {
+    const body = {
+      studentId: document.getElementById("fStudentId").value.trim(),
+      name:      document.getElementById("fName").value.trim(),
+      email:     document.getElementById("fEmail").value.trim(),
+      className: document.getElementById("fClass").value.trim(),
+    };
+    if (!body.studentId || !body.name || !body.email || !body.className) {
+      showToast("All fields are required", "error"); return;
+    }
+    try {
+      if (editingId) {
+        await api.put(`/students/${editingId}`, body);
+        showToast("Student updated");
+      } else {
+        await api.post("/students", body);
+        showToast("Student added");
+      }
+      closeModal();
+      loadStudents();
+    } catch (err) { showToast(err.message, "error"); }
+  });
+
+  document.getElementById("searchInput").addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    renderTable(students.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      s.studentId.toLowerCase().includes(q) ||
+      s.email.toLowerCase().includes(q) ||
+      s.className.toLowerCase().includes(q)
+    ));
+  });
+
+  document.getElementById("addBtn").addEventListener("click", () => openModal());
+  document.getElementById("modalClose").addEventListener("click", closeModal);
+  document.getElementById("cancelBtn").addEventListener("click", closeModal);
+  modal.addEventListener("click", e => { if (e.target === modal) closeModal(); });
+
+  loadStudents();
+</script>
+</body>
+</html>
