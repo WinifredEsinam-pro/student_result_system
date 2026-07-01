@@ -1,4 +1,4 @@
-const API_URL = "https://student-result-api-81np.onrender.com";
+const API_URL = "https://student-result-api-81np.onrender.com/api";
 
 // ── Auth helpers ──
 const getToken = () => localStorage.getItem("token");
